@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="nn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Interaktiv bøyingssimulator – sterke verb i nynorsk</title>
+<style>
+:root {
+  --bg:#f5f7fb; --card:#fff; --ink:#182230; --muted:#5c6878;
+  --accent:#155eef; --accent2:#0e8a5a; --bad:#c62828; --good:#087f5b;
+  --line:#dbe2ea; --soft:#eef4ff; --shadow:0 8px 28px rgba(24,34,48,.08);
+}
+* {box-sizing:border-box}
+body {margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;line-height:1.45}
+header {background:linear-gradient(135deg,#173b7a,#155eef);color:#fff;padding:32px 20px}
+header .wrap, main {max-width:1100px;margin:auto}
+h1 {margin:0 0 8px;font-size:clamp(1.7rem,4vw,2.5rem)}
+h2 {margin-top:0}
+.subtitle {margin:0;opacity:.92}
+main {padding:22px 16px 50px}
+.tabs {display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+button,.tab {border:1px solid var(--line);background:#fff;color:var(--ink);padding:10px 14px;border-radius:10px;font-weight:650;cursor:pointer}
+button:hover,.tab:hover {border-color:var(--accent)}
+.tab.active {background:var(--accent);color:#fff;border-color:var(--accent)}
+.panel {background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+.hidden {display:none!important}
+.controls {display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+input,select {font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+input:focus,select:focus,button:focus {outline:3px solid rgba(21,94,239,.18);outline-offset:1px}
+.table-wrap {overflow:auto;border:1px solid var(--line);border-radius:12px}
+table {border-collapse:collapse;width:100%;min-width:760px;background:#fff}
+th,td {padding:11px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th {background:#f0f4f9;position:sticky;top:0;z-index:1}
+tr:last-child td {border-bottom:0}
+.alt {color:var(--muted);font-size:.9em}
+.small {color:var(--muted);font-size:.92rem}
+.badge {display:inline-block;padding:3px 7px;border-radius:999px;background:var(--soft);color:#174ea6;font-size:.78rem;font-weight:700}
+.quiz-head {display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap}
+.progress {height:9px;background:#e6ebf2;border-radius:999px;overflow:hidden;margin:14px 0}
+.progress > div {height:100%;background:var(--accent);width:0%;transition:width .2s}
+.question {font-size:1.18rem;margin:18px 0}
+.blank {min-width:170px;max-width:100%;border:0;border-bottom:3px solid #7d8da3;border-radius:0;padding:5px 7px;background:#f8fafc}
+.blank:focus {border-bottom-color:var(--accent);outline:none}
+.actions {display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}
+.primary {background:var(--accent);border-color:var(--accent);color:#fff}
+.good {color:var(--good);font-weight:700}
+.bad {color:var(--bad);font-weight:700}
+.feedback {min-height:28px;margin-top:12px}
+.hint {background:#fff8db;border:1px solid #f0d778;border-radius:10px;padding:10px 12px;margin-top:12px}
+footer {margin-top:18px;color:var(--muted);font-size:.86rem}
+@media (max-width:650px) {
+  th,td {padding:9px 8px}
+  .panel {padding:14px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Interaktiv bøyingssimulator</h1>
+    <p class="subtitle">Sterke verb i nynorsk – tren på infinitiv, presens, preteritum og perfektum.</p>
+  </div>
+</header>
+
+<main>
+  <div class="tabs" role="tablist" aria-label="Innhald">
+    <button class="tab active" id="tab-list" onclick="showTab('list')">Verboversikt</button>
+    <button class="tab" id="tab-quiz" onclick="showTab('quiz')">Fill in the blanks</button>
+  </div>
+
+  <section id="list" class="panel">
+    <h2>Verboversikt</h2>
+    <p class="small">Alfabetisk oversikt. Perfektumformene er skrivne som <strong>har + perfektum partisipp</strong> og <strong>hadde + perfektum partisipp</strong>.</p>
+    <div class="controls">
+      <input id="search" type="search" placeholder="Søk etter verb …" aria-label="Søk etter verb">
+      <select id="quizFilter" aria-label="Vel oppgåvetype">
+        <option value="all">Alle oppgåvetypar</option>
+        <option value="pres">Presens</option>
+        <option value="pret">Preteritum</option>
+        <option value="part">Perfektum</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Infinitiv</th><th>Presens</th><th>Preteritum</th><th>Presens perfektum</th><th>Preteritum perfektum</th></tr>
+        </thead>
+        <tbody id="verbRows"></tbody>
+      </table>
+    </div>
+    <footer>
+      Grunnlista er laga frå oversikta «Sterke verb i nynorsk» hos DinOrdbok, med valfrie former der oversikta oppgir dei.
+      Sjå kjelda for fleire detaljar om normering og variantar.
+    </footer>
+  </section>
+
+  <section id="quiz" class="panel hidden">
+    <div class="quiz-head">
+      <div>
+        <h2>Fill in the blanks</h2>
+        <div class="small" id="score">Poeng: 0 / 0</div>
+      </div>
+      <button onclick="newQuiz()">Start på nytt</button>
+    </div>
+    <div class="progress"><div id="progressBar"></div></div>
+    <div id="question" class="question"></div>
+    <div class="actions">
+      <button onclick="checkAnswer()" class="primary">Sjekk svar</button>
+      <button onclick="giveHint()">Hint</button>
+      <button onclick="nextQuestion()">Fortsett til neste oppgåve</button>
+    </div>
+    <div id="hint" class="hint hidden" aria-live="polite"></div>
+    <div id="feedback" class="feedback" aria-live="polite"></div>
+    <p class="small">Tips: Når eit verb har fleire normerte former, blir dei godtekne som rette svar.</p>
+  </section>
+</main>
+
+<script>
+const verbs = [{"inf": "be", "pres": ["ber"], "pret": ["bad"], "part": ["bede", "bedd", "bedt"]}, {"inf": "bede", "pres": ["bed"], "pret": ["bad"], "part": ["bedt", "bede", "bedd"]}, {"inf": "bere", "pres": ["ber"], "pret": ["bar"], "part": ["bore"]}, {"inf": "bite", "pres": ["bit"], "pret": ["beit"], "part": ["bite"]}, {"inf": "blåse", "pres": ["blåser", "blæs"], "pret": ["blåste", "bles"], "part": ["blåst", "blåse"]}, {"inf": "brenne", "pres": ["brenn"], "pret": ["brann"], "part": ["brunne"]}, {"inf": "bryte", "pres": ["bryt"], "pret": ["braut"], "part": ["brote"]}, {"inf": "by", "pres": ["byr"], "pret": ["bydde", "baud"], "part": ["bydd", "bode", "bydt"]}, {"inf": "byde", "pres": ["byder", "byd"], "pret": ["bydde", "baud"], "part": ["bydt", "bode", "bydd"]}, {"inf": "drepe", "pres": ["drep"], "pret": ["drap"], "part": ["drepe"]}, {"inf": "drikke", "pres": ["drikk"], "pret": ["drakk"], "part": ["drukke"]}, {"inf": "drive", "pres": ["driv"], "pret": ["dreiv"], "part": ["drive"]}, {"inf": "ete", "pres": ["et"], "pret": ["åt"], "part": ["ete"]}, {"inf": "fare", "pres": ["fer"], "pret": ["fór"], "part": ["fare"]}, {"inf": "finne", "pres": ["finn"], "pret": ["fann"], "part": ["funne"]}, {"inf": "fryse", "pres": ["frys"], "pret": ["fraus"], "part": ["frose"]}, {"inf": "få", "pres": ["får"], "pret": ["fekk"], "part": ["fått"]}, {"inf": "gi", "pres": ["gir"], "pret": ["gav"], "part": ["gitt"]}, {"inf": "gje", "pres": ["gjev"], "pret": ["gav"], "part": ["gjeve"]}, {"inf": "gjeve", "pres": ["gjev"], "pret": ["gav"], "part": ["gjeve"]}, {"inf": "gripe", "pres": ["grip"], "pret": ["greip"], "part": ["gripe"]}, {"inf": "gråte", "pres": ["græt"], "pret": ["gret"], "part": ["gråte"]}, {"inf": "gå", "pres": ["går"], "pret": ["gjekk"], "part": ["gått"]}, {"inf": "halde", "pres": ["held"], "pret": ["heldt"], "part": ["halde"]}, {"inf": "kome", "pres": ["kjem"], "pret": ["kom"], "part": ["kome"]}, {"inf": "komme", "pres": ["kjem"], "pret": ["kom"], "part": ["komme"]}, {"inf": "krype", "pres": ["kryp"], "pret": ["kraup"], "part": ["krope"]}, {"inf": "la", "pres": ["lar"], "pret": ["ladde"], "part": ["ladd", "ladt"]}, {"inf": "late", "pres": ["lèt"], "pret": ["lét"], "part": ["late"]}, {"inf": "le", "pres": ["ler"], "pret": ["lo"], "part": ["ledd", "lett"]}, {"inf": "lese", "pres": ["les"], "pret": ["las"], "part": ["lese"]}, {"inf": "lyge", "pres": ["lyg"], "pret": ["laug"], "part": ["loge"]}, {"inf": "låte", "pres": ["læt"], "pret": ["lét"], "part": ["låte"]}, {"inf": "nyte", "pres": ["nyt"], "pret": ["naut"], "part": ["note", "nytt"]}, {"inf": "reke", "pres": ["rek"], "pret": ["rak"], "part": ["reke"]}, {"inf": "rekke", "pres": ["rekk"], "pret": ["rakk"], "part": ["rokke"]}, {"inf": "ryke", "pres": ["ryk"], "pret": ["rauk"], "part": ["roke"]}, {"inf": "skine", "pres": ["skin"], "pret": ["skein"], "part": ["skine"]}, {"inf": "skjere", "pres": ["skjer"], "pret": ["skar"], "part": ["skore"]}, {"inf": "skrike", "pres": ["skrik"], "pret": ["skreik"], "part": ["skrike"]}, {"inf": "skrive", "pres": ["skriv"], "pret": ["skreiv"], "part": ["skrive"]}, {"inf": "skyte", "pres": ["skyt"], "pret": ["skaut"], "part": ["skote"]}, {"inf": "sleppe", "pres": ["slepper"], "pret": ["sleppte"], "part": ["sleppt"]}, {"inf": "slite", "pres": ["slit"], "pret": ["sleit"], "part": ["slite"]}, {"inf": "slå", "pres": ["slår"], "pret": ["slo"], "part": ["slått", "slege"]}, {"inf": "springe", "pres": ["spring"], "pret": ["sprang"], "part": ["sprunge"]}, {"inf": "stele", "pres": ["stel"], "pret": ["stal"], "part": ["stole"]}, {"inf": "strekke", "pres": ["strekk"], "pret": ["strakk"], "part": ["strokke"]}, {"inf": "stå", "pres": ["står"], "pret": ["stod"], "part": ["stått"]}, {"inf": "svike", "pres": ["svik"], "pret": ["sveik"], "part": ["svike"]}, {"inf": "synge", "pres": ["syng"], "pret": ["song"], "part": ["sunge"]}, {"inf": "syngje", "pres": ["syng"], "pret": ["song"], "part": ["sunge"]}, {"inf": "søkke", "pres": ["søkk"], "pret": ["sokk"], "part": ["sokke"]}, {"inf": "ta", "pres": ["tar"], "pret": ["tok"], "part": ["tatt", "teke"]}, {"inf": "take", "pres": ["tek"], "pret": ["tok"], "part": ["teke"]}, {"inf": "tillate", "pres": ["tillèt"], "pret": ["tillét"], "part": ["tillate"]}, {"inf": "vege", "pres": ["vegar"], "pret": ["vega"], "part": ["vega"]}, {"inf": "vekse", "pres": ["veks"], "pret": ["voks", "vaks"], "part": ["vakse"]}, {"inf": "vere", "pres": ["er"], "pret": ["var"], "part": ["vore"]}, {"inf": "verte", "pres": ["vert"], "pret": ["vart"], "part": ["vorte"]}, {"inf": "vinne", "pres": ["vinnar"], "pret": ["vinna"], "part": ["vinna"]}];
+
+const $ = id => document.getElementById(id);
+let quiz = [];
+let qIndex = 0;
+let score = 0;
+let answered = false;
+let hintUsed = false;
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function showTab(which) {
+  $('list').classList.toggle('hidden', which !== 'list');
+  $('quiz').classList.toggle('hidden', which !== 'quiz');
+  $('tab-list').classList.toggle('active', which === 'list');
+  $('tab-quiz').classList.toggle('active', which === 'quiz');
+  if (which === 'quiz' && quiz.length === 0) newQuiz();
+}
+function displayForms(forms) {
+  return forms.length === 1 ? esc(forms[0]) : esc(forms[0]) + ' <span class="alt">/ ' + forms.slice(1).map(esc).join(' / ') + '</span>';
+}
+function renderTable() {
+  const term = $('search').value.trim().toLowerCase();
+  const rows = verbs.filter(v => v.inf.toLowerCase().includes(term)).map(v => `
+    <tr>
+      <td><strong>å ${esc(v.inf)}</strong></td>
+      <td>${displayForms(v.pres)}</td>
+      <td>${displayForms(v.pret)}</td>
+      <td>har ${displayForms(v.part)}</td>
+      <td>hadde ${displayForms(v.part)}</td>
+    </tr>`).join('');
+  $('verbRows').innerHTML = rows || '<tr><td colspan="5">Ingen treff.</td></tr>';
+}
+$('search').addEventListener('input', renderTable);
+renderTable();
+
+function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function shuffle(arr) {
+  return arr.map(x => [Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);
+}
+
+function newQuiz() {
+  const type = $('quizFilter').value;
+  let pool = [];
+  verbs.forEach(v => {
+    if (type === 'all') {
+      pool.push({v, type: rand(['pres','pret','part'])});
+    } else pool.push({v, type});
+  });
+  quiz = shuffle(pool);
+  qIndex = 0; score = 0; answered = false; hintUsed = false;
+  renderQuestion();
+}
+
+function renderQuestion() {
+  if (qIndex >= quiz.length) {
+    $('question').innerHTML = `<strong>Oppgåvesettet er ferdig!</strong><br>Du fekk ${score} av ${quiz.length} poeng.`;
+    $('feedback').innerHTML = '';
+    $('hint').classList.add('hidden');
+    $('progressBar').style.width = '100%';
+    $('score').textContent = `Poeng: ${score} / ${quiz.length}`;
+    return;
+  }
+  const item = quiz[qIndex], v = item.v, type = item.type;
+  const labels = {pres:'presens',pret:'preteritum',part:'perfektum'};
+  let sentence = '';
+  if (type === 'pres') sentence = `Eg <input class="blank" id="answer" autocomplete="off" aria-label="Svar"> no til skulen. (å ${esc(v.inf)})`;
+  if (type === 'pret') sentence = `I går <input class="blank" id="answer" autocomplete="off" aria-label="Svar"> til skulen. (å ${esc(v.inf)})`;
+  if (type === 'part') sentence = `Eg har <input class="blank" id="answer" autocomplete="off" aria-label="Svar"> til skulen. (å ${esc(v.inf)})`;
+  $('question').innerHTML = `<span class="badge">${labels[type]}</span><br>${sentence}`;
+  $('answer').focus();
+  $('answer').addEventListener('keydown', e => { if(e.key==='Enter') checkAnswer(); });
+  $('feedback').innerHTML = '';
+  $('hint').classList.add('hidden');
+  $('hint').textContent = '';
+  answered = false; hintUsed = false;
+  $('progressBar').style.width = `${(qIndex / quiz.length) * 100}%`;
+  $('score').textContent = `Poeng: ${score} / ${quiz.length}`;
+}
+
+function expected(item) {
+  return item.type === 'pres' ? item.v.pres :
+         item.type === 'pret' ? item.v.pret : item.v.part;
+}
+function norm(s) {
+  return s.trim().toLowerCase().replace(/\s+/g,' ');
+}
+function checkAnswer() {
+  if (qIndex >= quiz.length || answered) return;
+  const input = $('answer');
+  const val = norm(input.value);
+  const ok = expected(quiz[qIndex]).some(x => norm(x) === val);
+  answered = true;
+  if (ok) {
+    score++;
+    $('feedback').innerHTML = '<span class="good">✓ Rett!</span>';
+  } else {
+    $('feedback').innerHTML = '<span class="bad">✗ Ikkje heilt.</span> Riktig svar: <strong>' + expected(quiz[qIndex]).map(esc).join(' / ') + '</strong>';
+  }
+  $('score').textContent = `Poeng: ${score} / ${quiz.length}`;
+}
+function giveHint() {
+  if (qIndex >= quiz.length) return;
+  const answers = expected(quiz[qIndex]);
+  hintUsed = true;
+  $('hint').classList.remove('hidden');
+  $('hint').innerHTML = `Hint: Første bokstav er <strong>${esc(answers[0][0])}</strong>. Verbet har ${answers[0].length} bokstavar i denne forma.`;
+}
+function nextQuestion() {
+  if (qIndex < quiz.length) qIndex++;
+  renderQuestion();
+}
+$('quizFilter').addEventListener('change', newQuiz);
+</script>
+</body>
+</html>
